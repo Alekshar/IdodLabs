@@ -2,7 +2,7 @@ var http = require('http'),
   WebSocketServer = require('ws').Server,
   express = require('express'),
   port = 80,
-  portmqtt = 32769,
+  portmqtt = 32768,
   host = '0.0.0.0';
 
 

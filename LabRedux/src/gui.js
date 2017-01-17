@@ -1,18 +1,14 @@
 
-function sensorSelectionReducer(state, action) {
+function sensorSelectionReducer(state={selectedid:"",tick:0}, action) {
 	switch(action.type){
 	case "select":
-		return action.sensorid;
+		return {selectedid:action.sensorid, tick:state.tick};
+	default:
+		return {selectedid:state.selectedid, tick:state.tick+1};
 	}
-	return state;
 }
 
 let store = Redux.createStore(sensorSelectionReducer);
-
-store.subscribe(() =>{
-	render();
-});
-
 
 var MqttUrl = React.createClass({
 	render: function() {
@@ -56,9 +52,18 @@ var ListSensors = React.createClass({
 	},
 });
 
+ListSensors = ReactRedux.connect(
+	(state) => {
+		return {tick:state.tick};
+	},
+	(dispatch)=> {
+		return{};
+	}
+)(ListSensors);
+
 var SensorDetails = React.createClass({
 	render: function() {
-		var selectedSensor = manager.getSensor(store.getState());
+		var selectedSensor = this.props.selectedSensor;
 		if(selectedSensor == null){
 			return (React.createElement('h2', {}, "aucune sélection"));
 		}
@@ -86,6 +91,16 @@ var SensorDetails = React.createClass({
 		)
 	},
 });
+
+SensorDetails = ReactRedux.connect(
+	(state) => {
+		return {selectedSensor: manager.getSensor(state.selectedid), tick:state.tick};
+	},
+	(dispatch)=> {
+		return{};
+	}
+)(SensorDetails);
+
 
 function render(){
 	ReactDOM.render(

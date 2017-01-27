@@ -3,8 +3,17 @@ var http = require('http'),
   express = require('express'),
   bodyParser = require('body-parser'),
   port = 80,
-  portmqtt = 32768,
-  host = '0.0.0.0';
+  host = '0.0.0.0',
+  mongodbURL = 'mongodb://localhost:/InternetOfThings',
+  mqttURL = 'mqtt://localhost:32768';
+
+if(process.argv.length>=3){
+	mqttURL = process.argv[2];
+}
+
+if(process.argv.length>=4){
+	mongodbURL = process.argv[3];
+}
 
 var app = express();
 
@@ -30,7 +39,6 @@ wss.on('connection', function(client) {
 
 
 
-var mqttURL = 'mqtt://localhost:'+portmqtt;
 var mqtt = require('mqtt').connect(mqttURL);
 
 mqtt.subscribe('value/#');
@@ -39,19 +47,19 @@ mqtt.on('message', (topic, message) => {
 	var data = JSON.parse(message);
 	var name = topic.split('/')[1];
 	data.id = name;
+	console.log(data);
 	wss.broadcast(JSON.stringify(data));
 });
 
 //mongodb connection
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
-var url = 'mongodb://localhost:27017/InternetOfStuff';
 var db = null;
-MongoClient.connect(url, function (err, database) {
+MongoClient.connect(mongodbURL, function (err, database) {
 	if (err) {
 	  console.log('Unable to connect to the mongoDB server. Error:', err);
 	} else {
-	  console.log('Connection established to mongodb : ', url);
+	  console.log('Connection established to mongodb : ', mongodbURL);
 	  db = database;
 	}
 });

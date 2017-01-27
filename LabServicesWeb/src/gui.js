@@ -1,10 +1,12 @@
 
-function sensorSelectionReducer(state={selectedid:"",tick:0}, action) {
+function sensorSelectionReducer(state={selectedid:"",tick:0,paginated:[]}, action) {
 	switch(action.type){
+	case "pagination":
+		return {selectedid:state.selectedid, tick:state.tick, paginated:action.paginated};
 	case "select":
-		return {selectedid:action.sensorid, tick:state.tick};
+		return {selectedid:action.sensorid, tick:state.tick, paginated:state.paginated};
 	default:
-		return {selectedid:state.selectedid, tick:state.tick+1};
+		return {selectedid:state.selectedid, tick:state.tick+1, paginated:state.paginated};
 	}
 }
 
@@ -25,6 +27,10 @@ var MqttUrl = React.createClass({
 var SensorMenu = React.createClass({
 	changeSelectedSensor: function(sensorId){
 		store.dispatch({type:"select", sensorid:sensorId});
+		getSensorInformations(sensorId, function(data){
+			document.querySelector('#sensor-name').value = data.name;
+			document.querySelector('#sensor-location').value = data.location;
+		});
 	},
 	render: function() {
 		return (
@@ -61,25 +67,73 @@ ListSensors = ReactRedux.connect(
 	}
 )(ListSensors);
 
+function sensorDetailsChange(){
+	var infos = {
+			name:document.querySelector('#sensor-name').value,
+			location:document.querySelector('#sensor-location').value
+		},
+		sensorid = store.getState().selectedid;
+		
+	updateSensorInformations(sensorid, infos);
+}
+
+function paginateHistory(){
+	var from = new Date(Date.parse($('#datefrom').val())),
+		to = new Date(Date.parse($('#dateto').val())),
+		sensorid = store.getState().selectedid;
+	
+	getSensorMeasures(sensorid, from.toISOString(), to.toISOString(), function(data){
+		store.dispatch({type:"pagination", paginated:data});
+	});
+}
+
 var SensorDetails = React.createClass({
 	componentDidUpdate: function(prevProps, prevState){
 		generateCanvas();
+		$(function(){
+			$('#datefrom').datetimepicker({
+				onChangeDateTime:paginateHistory,
+			});
+			$('#dateto').datetimepicker({
+				onChangeDateTime:paginateHistory
+			});
+		});
 	},
 	render: function() {
 		var selectedSensor = this.props.selectedSensor;
 		if(selectedSensor == null){
 			return (React.createElement('h2', {}, "aucune sélection"));
 		}
+		var pagination = this.props.pagination;
 		return (
 			React.createElement('div', {style:{margin:"10px", width:"300px"}}, 
 				React.createElement('div', {className:"box",style:{backgroundColor:"#cacce6"}}, selectedSensor.id),
-				React.createElement('div', {style:{}}, 
-					React.createElement('h3', {style:{}}, "Valeur actuelle : "),
-					React.createElement('h2', {style:{textAlign:"right"}}, selectedSensor.getLast())
-				),
-				React.createElement('div', {style:{}}, 
-					React.createElement('h3', {style:{}}, "Historique : "),
+				React.createElement('div', {}, 
+						React.createElement('label', {}, "Nom : "),
+						React.createElement('input', {id:"sensor-name", onChange:sensorDetailsChange }),
+						React.createElement('br', {}),
+						React.createElement('label', {}, "Localisation : "),
+						React.createElement('input', {id:"sensor-location", onChange:sensorDetailsChange})
+					),
+					React.createElement('div', {}, 
+							React.createElement('h3', {}, "Valeur actuelle : "),
+							React.createElement('h2', {style:{textAlign:"right"}}, selectedSensor.getLast())
+						),
+				React.createElement('div', {}, 
+					React.createElement('h3', {}, "Historique : "),
 					React.createElement('canvas', {id:"canvas",width:"300",height:"200"})
+				),
+				React.createElement('div', {style:{position:"relative"}}, 
+					React.createElement('h3', {}, "Naviguer : "),
+					React.createElement('label',{},"de"),
+					React.createElement('input', {id:"datefrom",type:"datetime",onChange:paginateHistory}),
+					React.createElement('label', {}, "à"),
+					React.createElement('input', {id:"dateto",type:"datetime",onChange:paginateHistory}),
+					React.createElement('div', {},
+						pagination.map(function(value, i){
+							return React.createElement('div', {}, new Date(value.date).toLocaleString()+"  = "+value.value);
+						})
+					)
 				)
 			)
 		)
@@ -163,7 +217,7 @@ function sortNumber(a,b) {
 
 SensorDetails = ReactRedux.connect(
 	(state) => {
-		return {selectedSensor: manager.getSensor(state.selectedid), tick:state.tick};
+		return {selectedSensor: manager.getSensor(state.selectedid), tick:state.tick, pagination:state.paginated};
 	},
 	(dispatch)=> {
 		return{};

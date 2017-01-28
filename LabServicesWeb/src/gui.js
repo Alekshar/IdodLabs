@@ -31,6 +31,7 @@ var SensorMenu = React.createClass({
 			document.querySelector('#sensor-name').value = data.name;
 			document.querySelector('#sensor-location').value = data.location;
 		});
+		paginateHistory();
 	},
 	render: function() {
 		return (

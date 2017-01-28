@@ -4,7 +4,7 @@ var http = require('http'),
   bodyParser = require('body-parser'),
   port = 80,
   host = '0.0.0.0',
-  mongodbURL = 'mongodb://localhost:/InternetOfThings',
+  mongodbURL = 'mongodb://localhost:27017/InternetOfThings',
   mqttURL = 'mqtt://localhost:32768';
 
 if(process.argv.length>=3){
@@ -47,7 +47,6 @@ mqtt.on('message', (topic, message) => {
 	var data = JSON.parse(message);
 	var name = topic.split('/')[1];
 	data.id = name;
-	console.log(data);
 	wss.broadcast(JSON.stringify(data));
 });
 

@@ -18,7 +18,11 @@ function getSensorInformations(sensorid, callback){
 	xhr.open('GET', 'http://'+window.location.host+'/sensor/informations/'+sensorid, true);
 	xhr.onreadystatechange = function (aEvt) {
 	  if (xhr.readyState == 4 && xhr.status == 200) {
-	      callback(JSON.parse(xhr.responseText));
+	      try{
+	    	  callback(JSON.parse(xhr.responseText));
+	      } catch (e){
+	    	  callback({name:'', location:''});
+	      }
 	  }
 	};
 	xhr.send(null);
